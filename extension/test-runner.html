@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jipange Voice Test Runner</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0f172a;
+            color: #e2e8f0;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px;
+            background: linear-gradient(135deg, #7c3aed, #ec4899);
+            border-radius: 12px;
+        }
+        
+        .test-controls {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            background: #374151;
+            border: 1px solid #4b5563;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+        
+        .btn:hover {
+            background: #4b5563;
+            border-color: #6b7280;
+        }
+        
+        .btn.primary {
+            background: linear-gradient(135deg, #7c3aed, #ec4899);
+            border-color: #7c3aed;
+        }
+        
+        .console {
+            background: #111827;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 20px;
+            height: 400px;
+            overflow-y: auto;
+            font-size: 14px;
+            white-space: pre-wrap;
+        }
+        
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding: 12px;
+            border-radius: 8px;
+            background: #1f2937;
+        }
+        
+        .status.running {
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .status.success {
+            border-left: 4px solid #10b981;
+        }
+        
+        .status.error {
+            border-left: 4px solid #ef4444;
+        }
+        
+        .progress {
+            width: 100%;
+            height: 8px;
+            background: #374151;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 16px 0;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #7c3aed, #ec4899);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px;
+            margin-top: 24px;
+        }
+        
+        .result-card {
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 16px;
+        }
+        
+        .result-card.pass {
+            border-left: 4px solid #10b981;
+        }
+        
+        .result-card.fail {
+            border-left: 4px solid #ef4444;
+        }
+        
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #374151;
+            border-top: 2px solid #7c3aed;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎤 Jipange Voice-to-Task Test Runner</h1>
+            <p>Comprehensive testing suite for voice input functionality</p>
+        </div>
+
+        <div class="test-controls">
+            <button class="btn primary" onclick="runAllTests()">Run All Tests</button>
+            <button class="btn" onclick="runQuickTest()">Quick Test</button>
+            <button class="btn" onclick="testMicrophone()">Test Microphone</button>
+            <button class="btn" onclick="testBackend()">Test Backend</button>
+            <button class="btn" onclick="clearConsole()">Clear Console</button>
+            <button class="btn" onclick="exportResults()">Export Results</button>
+        </div>
+
+        <div id="status" class="status" style="display: none;">
+            <div class="spinner"></div>
+            <span id="status-text">Initializing tests...</span>
+        </div>
+
+        <div class="progress">
+            <div id="progress-bar" class="progress-bar"></div>
+        </div>
+
+        <div class="console" id="console">
+Welcome to Jipange Voice Test Runner!
+
+Click "Run All Tests" to start comprehensive testing.
+Use "Quick Test" for basic functionality check.
+
+Console output will appear here...
+        </div>
+
+        <div id="results" class="results-grid" style="display: none;"></div>
+    </div>
+
+    <script src="test-voice-automation.js"></script>
+    <script>
+        let testRunner = null;
+        let currentTests = [];
+
+        // Override console.log to capture output
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+
+        function logToConsole(message, type = 'log') {
+            const consoleEl = document.getElementById('console');
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = type === 'error' ? '❌' : type === 'warn' ? '⚠️' : '📝';
+            
+            consoleEl.textContent += `[${timestamp}] ${prefix} ${message}\n`;
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+        }
+
+        console.log = (...args) => {
+            originalLog(...args);
+            logToConsole(args.join(' '));
+        };
+
+        console.error = (...args) => {
+            originalError(...args);
+            logToConsole(args.join(' '), 'error');
+        };
+
+        console.warn = (...args) => {
+            originalWarn(...args);
+            logToConsole(args.join(' '), 'warn');
+        };
+
+        function updateStatus(text, type = 'running') {
+            const statusEl = document.getElementById('status');
+            const statusText = document.getElementById('status-text');
+            
+            statusEl.style.display = 'flex';
+            statusEl.className = `status ${type}`;
+            statusText.textContent = text;
+            
+            if (type !== 'running') {
+                setTimeout(() => {
+                    statusEl.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        function updateProgress(percentage) {
+            const progressBar = document.getElementById('progress-bar');
+            progressBar.style.width = `${percentage}%`;
+        }
+
+        async function runAllTests() {
+            updateStatus('Running comprehensive tests...', 'running');
+            updateProgress(0);
+            
+            try {
+                testRunner = new AutomatedVoiceTests();
+                
+                // Override the test runner to provide progress updates
+                const originalRunAllTests = testRunner.runAllTests;
+                testRunner.runAllTests = async function() {
+                    console.log('🚀 Starting Automated Voice-to-Task Tests...');
+                    
+                    const tests = [
+                        { name: 'Microphone Access', fn: () => this.testMicrophoneAccess() },
+                        { name: 'Audio Recording', fn: () => this.testAudioRecording() },
+                        { name: 'Backend Connection', fn: () => this.testBackendConnection() },
+                        { name: 'Voice Processing Pipeline', fn: () => this.testVoiceProcessing() },
+                        { name: 'Task Extraction Accuracy', fn: () => this.testTaskExtraction() },
+                        { name: 'Error Handling', fn: () => this.testErrorHandling() },
+                        { name: 'Performance Benchmarks', fn: () => this.testPerformance() }
+                    ];
+
+                    this.totalTests = tests.length;
+
+                    for (let i = 0; i < tests.length; i++) {
+                        const test = tests[i];
+                        console.log(`\n📋 Running: ${test.name}`);
+                        updateProgress((i / tests.length) * 100);
+                        
+                        try {
+                            const result = await test.fn();
+                            this.testResults.push({
+                                name: test.name,
+                                status: 'PASS',
+                                result: result,
+                                timestamp: new Date().toISOString()
+                            });
+                            console.log(`✅ ${test.name}: PASSED`);
+                        } catch (error) {
+                            this.testResults.push({
+                                name: test.name,
+                                status: 'FAIL',
+                                error: error.message,
+                                timestamp: new Date().toISOString()
+                            });
+                            console.error(`❌ ${test.name}: FAILED - ${error.message}`);
+                        }
+                        this.currentTest++;
+                    }
+
+                    updateProgress(100);
+                    this.generateReport();
+                    displayResults(this.testResults);
+                    
+                    const passed = this.testResults.filter(r => r.status === 'PASS').length;
+                    const total = this.testResults.length;
+                    updateStatus(`Tests completed: ${passed}/${total} passed`, passed === total ? 'success' : 'error');
+                };
+                
+                await testRunner.runAllTests();
+                
+            } catch (error) {
+                console.error('Test runner failed:', error);
+                updateStatus('Test runner failed', 'error');
+            }
+        }
+
+        async function runQuickTest() {
+            updateStatus('Running quick test...', 'running');
+            updateProgress(0);
+            
+            try {
+                testRunner = new AutomatedVoiceTests();
+                
+                // Run essential tests only
+                const quickTests = [
+                    { name: 'Microphone Access', fn: () => testRunner.testMicrophoneAccess() },
+                    { name: 'Backend Connection', fn: () => testRunner.testBackendConnection() }
+                ];
+                
+                const results = [];
+                
+                for (let i = 0; i < quickTests.length; i++) {
+                    const test = quickTests[i];
+                    updateProgress((i / quickTests.length) * 100);
+                    
+                    try {
+                        const result = await test.fn();
+                        results.push({ name: test.name, status: 'PASS', result });
+                        console.log(`✅ ${test.name}: PASSED`);
+                    } catch (error) {
+                        results.push({ name: test.name, status: 'FAIL', error: error.message });
+                        console.error(`❌ ${test.name}: FAILED - ${error.message}`);
+                    }
+                }
+                
+                updateProgress(100);
+                displayResults(results);
+                
+                const passed = results.filter(r => r.status === 'PASS').length;
+                updateStatus(`Quick test completed: ${passed}/${results.length} passed`, passed === results.length ? 'success' : 'error');
+                
+            } catch (error) {
+                console.error('Quick test failed:', error);
+                updateStatus('Quick test failed', 'error');
+            }
+        }
+
+        async function testMicrophone() {
+            updateStatus('Testing microphone...', 'running');
+            
+            try {
+                testRunner = new AutomatedVoiceTests();
+                const result = await testRunner.testMicrophoneAccess();
+                console.log('Microphone test result:', result);
+                updateStatus('Microphone test completed', 'success');
+            } catch (error) {
+                console.error('Microphone test failed:', error);
+                updateStatus('Microphone test failed', 'error');
+            }
+        }
+
+        async function testBackend() {
+            updateStatus('Testing backend connection...', 'running');
+            
+            try {
+                testRunner = new AutomatedVoiceTests();
+                const result = await testRunner.testBackendConnection();
+                console.log('Backend test result:', result);
+                updateStatus('Backend test completed', 'success');
+            } catch (error) {
+                console.error('Backend test failed:', error);
+                updateStatus('Backend test failed', 'error');
+            }
+        }
+
+        function clearConsole() {
+            document.getElementById('console').textContent = 'Console cleared.\n';
+            document.getElementById('results').style.display = 'none';
+            updateProgress(0);
+        }
+
+        function exportResults() {
+            if (testRunner && testRunner.testResults) {
+                const results = {
+                    timestamp: new Date().toISOString(),
+                    userAgent: navigator.userAgent,
+                    results: testRunner.testResults
+                };
+                
+                const blob = new Blob([JSON.stringify(results, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `jipange-voice-test-results-${Date.now()}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                console.log('Test results exported');
+            } else {
+                console.warn('No test results to export');
+            }
+        }
+
+        function displayResults(results) {
+            const resultsEl = document.getElementById('results');
+            resultsEl.innerHTML = '';
+            resultsEl.style.display = 'grid';
+            
+            results.forEach(result => {
+                const card = document.createElement('div');
+                card.className = `result-card ${result.status.toLowerCase()}`;
+                
+                const statusIcon = result.status === 'PASS' ? '✅' : '❌';
+                const details = result.status === 'PASS' 
+                    ? JSON.stringify(result.result, null, 2)
+                    : result.error;
+                
+                card.innerHTML = `
+                    <h3>${statusIcon} ${result.name}</h3>
+                    <p><strong>Status:</strong> ${result.status}</p>
+                    <p><strong>Time:</strong> ${new Date(result.timestamp).toLocaleTimeString()}</p>
+                    <details>
+                        <summary>Details</summary>
+                        <pre style="font-size: 12px; margin-top: 8px; overflow-x: auto;">${details}</pre>
+                    </details>
+                `;
+                
+                resultsEl.appendChild(card);
+            });
+        }
+
+        // Initialize
+        console.log('🎤 Jipange Voice Test Runner initialized');
+        console.log('Ready to run tests!');
+    </script>
+</body>
+</html>

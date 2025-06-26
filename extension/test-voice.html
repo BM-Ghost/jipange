@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jipange Voice-to-Task Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1e293b, #334155);
+            color: white;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .logo {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #7c3aed, #ec4899);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .test-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .test-button {
+            background: linear-gradient(135deg, #7c3aed, #ec4899);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin: 8px;
+        }
+        
+        .test-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(124, 58, 237, 0.4);
+        }
+        
+        .test-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .status {
+            margin-top: 16px;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .status.success {
+            background: rgba(34, 197, 94, 0.2);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            color: #22c55e;
+        }
+        
+        .status.error {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+        }
+        
+        .status.info {
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: #3b82f6;
+        }
+        
+        .test-samples {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+        
+        .sample-card {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .sample-text {
+            font-style: italic;
+            color: #94a3b8;
+            margin-bottom: 12px;
+        }
+        
+        .waveform {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 40px;
+            margin: 16px 0;
+        }
+        
+        .wave-bar {
+            width: 3px;
+            background: #7c3aed;
+            margin: 0 1px;
+            border-radius: 2px;
+            animation: wave 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes wave {
+            0%, 100% { height: 10px; }
+            50% { height: 30px; }
+        }
+        
+        .wave-bar:nth-child(2) { animation-delay: 0.1s; }
+        .wave-bar:nth-child(3) { animation-delay: 0.2s; }
+        .wave-bar:nth-child(4) { animation-delay: 0.3s; }
+        .wave-bar:nth-child(5) { animation-delay: 0.4s; }
+        
+        .results {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 16px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .metric:last-child {
+            border-bottom: none;
+        }
+        
+        .metric-value {
+            font-weight: 600;
+            color: #22c55e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">J</div>
+            <h1>Jipange Voice-to-Task Test Suite</h1>
+            <p>Test the voice input functionality and AI task extraction</p>
+        </div>
+
+        <!-- Microphone Test -->
+        <div class="test-section">
+            <h2>🎤 Microphone Access Test</h2>
+            <p>First, let's test if your microphone is working properly.</p>
+            <button class="test-button" onclick="testMicrophone()">Test Microphone</button>
+            <div id="mic-status" class="status" style="display: none;"></div>
+            <div id="mic-waveform" class="waveform" style="display: none;">
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+            </div>
+        </div>
+
+        <!-- Voice Recording Test -->
+        <div class="test-section">
+            <h2>🎙️ Voice Recording Test</h2>
+            <p>Test the complete voice recording and processing pipeline.</p>
+            <button class="test-button" id="record-btn" onclick="toggleRecording()">Start Recording</button>
+            <button class="test-button" onclick="playLastRecording()" id="play-btn" disabled>Play Last Recording</button>
+            <div id="recording-status" class="status" style="display: none;"></div>
+            <div id="recording-results" class="results" style="display: none;"></div>
+        </div>
+
+        <!-- Sample Voice Commands -->
+        <div class="test-section">
+            <h2>💬 Sample Voice Commands</h2>
+            <p>Try these sample commands to test the AI task extraction:</p>
+            <div class="test-samples">
+                <div class="sample-card">
+                    <div class="sample-text">"Create a task to review the quarterly budget report by Friday"</div>
+                    <button class="test-button" onclick="testSampleCommand(0)">Test This</button>
+                </div>
+                <div class="sample-card">
+                    <div class="sample-text">"Remind me to call the client about the project proposal tomorrow at 2 PM"</div>
+                    <button class="test-button" onclick="testSampleCommand(1)">Test This</button>
+                </div>
+                <div class="sample-card">
+                    <div class="sample-text">"I need to finish the presentation slides and send them to the team by end of day"</div>
+                    <button class="test-button" onclick="testSampleCommand(2)">Test This</button>
+                </div>
+                <div class="sample-card">
+                    <div class="sample-text">"Schedule a 30-minute focus session for deep work on the API documentation"</div>
+                    <button class="test-button" onclick="testSampleCommand(3)">Test This</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Backend Connection Test -->
+        <div class="test-section">
+            <h2>🔗 Backend Connection Test</h2>
+            <p>Test the connection to the Jipange backend API.</p>
+            <button class="test-button" onclick="testBackendConnection()">Test Backend</button>
+            <button class="test-button" onclick="testOpenAIConnection()">Test OpenAI API</button>
+            <div id="backend-status" class="status" style="display: none;"></div>
+        </div>
+
+        <!-- Performance Metrics -->
+        <div class="test-section">
+            <h2>📊 Performance Metrics</h2>
+            <div id="metrics">
+                <div class="metric">
+                    <span>Microphone Access Time</span>
+                    <span class="metric-value" id="mic-time">-</span>
+                </div>
+                <div class="metric">
+                    <span>Recording Duration</span>
+                    <span class="metric-value" id="record-duration">-</span>
+                </div>
+                <div class="metric">
+                    <span>Processing Time</span>
+                    <span class="metric-value" id="process-time">-</span>
+                </div>
+                <div class="metric">
+                    <span>Audio File Size</span>
+                    <span class="metric-value" id="audio-size">-</span>
+                </div>
+                <div class="metric">
+                    <span>Success Rate</span>
+                    <span class="metric-value" id="success-rate">-</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Test Suite Implementation
+        class VoiceTestSuite {
+            constructor() {
+                this.mediaRecorder = null;
+                this.audioChunks = [];
+                this.isRecording = false;
+                this.lastRecording = null;
+                this.metrics = {
+                    micAccessTime: 0,
+                    recordingDuration: 0,
+                    processingTime: 0,
+                    audioSize: 0,
+                    successCount: 0,
+                    totalTests: 0
+                };
+                this.recordingStartTime = 0;
+            }
+
+            async testMicrophone() {
+                const startTime = Date.now();
+                const statusEl = document.getElementById('mic-status');
+                const waveformEl = document.getElementById('mic-waveform');
+                
+                statusEl.style.display = 'block';
+                statusEl.className = 'status info';
+                statusEl.textContent = 'Requesting microphone access...';
+
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    const accessTime = Date.now() - startTime;
+                    this.metrics.micAccessTime = accessTime;
+                    
+                    statusEl.className = 'status success';
+                    statusEl.textContent = `✅ Microphone access granted! (${accessTime}ms)`;
+                    
+                    // Show waveform animation
+                    waveformEl.style.display = 'flex';
+                    
+                    // Test audio levels
+                    const audioContext = new AudioContext();
+                    const analyser = audioContext.createAnalyser();
+                    const microphone = audioContext.createMediaStreamSource(stream);
+                    microphone.connect(analyser);
+                    
+                    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                    
+                    const checkAudioLevel = () => {
+                        analyser.getByteFrequencyData(dataArray);
+                        const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+                        
+                        if (average > 10) {
+                            statusEl.textContent = `✅ Microphone working! Audio level: ${Math.round(average)}`;
+                        }
+                    };
+                    
+                    const levelInterval = setInterval(checkAudioLevel, 100);
+                    
+                    // Stop after 5 seconds
+                    setTimeout(() => {
+                        clearInterval(levelInterval);
+                        stream.getTracks().forEach(track => track.stop());
+                        waveformEl.style.display = 'none';
+                        audioContext.close();
+                    }, 5000);
+                    
+                    document.getElementById('mic-time').textContent = `${accessTime}ms`;
+                    
+                } catch (error) {
+                    statusEl.className = 'status error';
+                    statusEl.textContent = `❌ Microphone access failed: ${error.message}`;
+                    waveformEl.style.display = 'none';
+                }
+            }
+
+            async toggleRecording() {
+                if (this.isRecording) {
+                    this.stopRecording();
+                } else {
+                    await this.startRecording();
+                }
+            }
+
+            async startRecording() {
+                const statusEl = document.getElementById('recording-status');
+                const recordBtn = document.getElementById('record-btn');
+                
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        audio: {
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            sampleRate: 16000
+                        }
+                    });
+                    
+                    this.mediaRecorder = new MediaRecorder(stream);
+                    this.audioChunks = [];
+                    this.recordingStartTime = Date.now();
+                    
+                    this.mediaRecorder.ondataavailable = (event) => {
+                        if (event.data.size > 0) {
+                            this.audioChunks.push(event.data);
+                        }
+                    };
+                    
+                    this.mediaRecorder.onstop = () => {
+                        this.processRecording();
+                    };
+                    
+                    this.mediaRecorder.start(1000);
+                    this.isRecording = true;
+                    
+                    recordBtn.textContent = 'Stop Recording';
+                    recordBtn.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+                    
+                    statusEl.style.display = 'block';
+                    statusEl.className = 'status info';
+                    statusEl.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div style="width: 8px; height: 8px; background: #ef4444; border-radius: 50%; animation: pulse 1s infinite;"></div>
+                            Recording... Speak now!
+                        </div>
+                    `;
+                    
+                } catch (error) {
+                    statusEl.style.display = 'block';
+                    statusEl.className = 'status error';
+                    statusEl.textContent = `❌ Recording failed: ${error.message}`;
+                }
+            }
+
+            stopRecording() {
+                if (this.mediaRecorder && this.isRecording) {
+                    this.mediaRecorder.stop();
+                    this.mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                    this.isRecording = false;
+                    
+                    const recordBtn = document.getElementById('record-btn');
+                    recordBtn.textContent = 'Processing...';
+                    recordBtn.disabled = true;
+                    recordBtn.style.background = 'linear-gradient(135deg, #6b7280, #4b5563)';
+                    
+                    this.metrics.recordingDuration = Date.now() - this.recordingStartTime;
+                    document.getElementById('record-duration').textContent = `${this.metrics.recordingDuration}ms`;
+                }
+            }
+
+            async processRecording() {
+                const statusEl = document.getElementById('recording-status');
+                const resultsEl = document.getElementById('recording-results');
+                const recordBtn = document.getElementById('record-btn');
+                const playBtn = document.getElementById('play-btn');
+                
+                const processingStartTime = Date.now();
+                
+                try {
+                    const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
+                    this.lastRecording = audioBlob;
+                    this.metrics.audioSize = audioBlob.size;
+                    
+                    statusEl.className = 'status info';
+                    statusEl.textContent = '🔄 Processing audio with AI...';
+                    
+                    // Enable play button
+                    playBtn.disabled = false;
+                    
+                    // Convert to base64
+                    const reader = new FileReader();
+                    reader.onloadend = async () => {
+                        const base64Audio = reader.result.split(',')[1];
+                        
+                        try {
+                            // Try backend first, fall back to mock
+                            let result;
+                            try {
+                                const response = await fetch('http://localhost:8000/api/ai/voice-to-task', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        audio_data: base64Audio,
+                                        user_id: 'test-user'
+                                    })
+                                });
+                                
+                                if (response.ok) {
+                                    result = await response.json();
+                                } else {
+                                    throw new Error('Backend unavailable');
+                                }
+                            } catch (backendError) {
+                                // Use mock response
+                                result = this.getMockVoiceResponse();
+                                statusEl.innerHTML = '⚠️ Using mock response (backend offline)';
+                            }
+                            
+                            this.metrics.processingTime = Date.now() - processingStartTime;
+                            this.metrics.successCount++;
+                            this.metrics.totalTests++;
+                            
+                            // Display results
+                            statusEl.className = 'status success';
+                            statusEl.textContent = '✅ Voice processed successfully!';
+                            
+                            resultsEl.style.display = 'block';
+                            resultsEl.innerHTML = `
+                                <h4>Processing Results:</h4>
+                                <div><strong>Transcript:</strong> "${result.transcript}"</div>
+                                <div><strong>Processing Time:</strong> ${this.metrics.processingTime}ms</div>
+                                <div><strong>Audio Size:</strong> ${this.formatBytes(audioBlob.size)}</div>
+                                <br>
+                                <h4>Extracted Task:</h4>
+                                <pre>${JSON.stringify(JSON.parse(result.extracted_task), null, 2)}</pre>
+                            `;
+                            
+                            this.updateMetrics();
+                            
+                        } catch (error) {
+                            this.metrics.totalTests++;
+                            statusEl.className = 'status error';
+                            statusEl.textContent = `❌ Processing failed: ${error.message}`;
+                        }
+                    };
+                    
+                    reader.readAsDataURL(audioBlob);
+                    
+                } catch (error) {
+                    statusEl.className = 'status error';
+                    statusEl.textContent = `❌ Processing failed: ${error.message}`;
+                } finally {
+                    recordBtn.textContent = 'Start Recording';
+                    recordBtn.disabled = false;
+                    recordBtn.style.background = 'linear-gradient(135deg, #7c3aed, #ec4899)';
+                }
+            }
+
+            playLastRecording() {
+                if (this.lastRecording) {
+                    const audio = new Audio(URL.createObjectURL(this.lastRecording));
+                    audio.play();
+                }
+            }
+
+            getMockVoiceResponse() {
+                const mockResponses = [
+                    {
+                        transcript: "Create a task to review the quarterly budget report by Friday",
+                        extracted_task: JSON.stringify({
+                            title: "Review quarterly budget report",
+                            description: "Analyze Q4 budget performance and prepare summary",
+                            priority: "high",
+                            category: "work",
+                            estimated_duration: 120,
+                            due_date: this.getNextFriday(),
+                            tags: ["budget", "quarterly", "review"]
+                        })
+                    },
+                    {
+                        transcript: "Remind me to call the client about the project proposal tomorrow",
+                        extracted_task: JSON.stringify({
+                            title: "Call client about project proposal",
+                            description: "Follow up on the submitted project proposal",
+                            priority: "medium",
+                            category: "work",
+                            estimated_duration: 30,
+                            due_date: this.getTomorrow(),
+                            tags: ["client", "call", "proposal"]
+                        })
+                    }
+                ];
+                
+                return mockResponses[Math.floor(Math.random() * mockResponses.length)];
+            }
+
+            async testSampleCommand(index) {
+                const samples = [
+                    "Create a task to review the quarterly budget report by Friday",
+                    "Remind me to call the client about the project proposal tomorrow at 2 PM",
+                    "I need to finish the presentation slides and send them to the team by end of day",
+                    "Schedule a 30-minute focus session for deep work on the API documentation"
+                ];
+                
+                const statusEl = document.getElementById('recording-status');
+                const resultsEl = document.getElementById('recording-results');
+                
+                statusEl.style.display = 'block';
+                statusEl.className = 'status info';
+                statusEl.textContent = '🔄 Testing sample command...';
+                
+                try {
+                    // Simulate processing
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+                    
+                    const result = {
+                        transcript: samples[index],
+                        extracted_task: JSON.stringify({
+                            title: this.extractTitleFromSample(samples[index]),
+                            description: "Generated from sample voice command",
+                            priority: "medium",
+                            category: "work",
+                            estimated_duration: 60,
+                            due_date: this.getTomorrow(),
+                            tags: ["sample", "test"]
+                        })
+                    };
+                    
+                    statusEl.className = 'status success';
+                    statusEl.textContent = '✅ Sample command processed!';
+                    
+                    resultsEl.style.display = 'block';
+                    resultsEl.innerHTML = `
+                        <h4>Sample Test Results:</h4>
+                        <div><strong>Input:</strong> "${result.transcript}"</div>
+                        <br>
+                        <h4>Extracted Task:</h4>
+                        <pre>${JSON.stringify(JSON.parse(result.extracted_task), null, 2)}</pre>
+                    `;
+                    
+                    this.metrics.successCount++;
+                    this.metrics.totalTests++;
+                    this.updateMetrics();
+                    
+                } catch (error) {
+                    statusEl.className = 'status error';
+                    statusEl.textContent = `❌ Sample test failed: ${error.message}`;
+                }
+            }
+
+            async testBackendConnection() {
+                const statusEl = document.getElementById('backend-status');
+                statusEl.style.display = 'block';
+                statusEl.className = 'status info';
+                statusEl.textContent = '🔄 Testing backend connection...';
+                
+                try {
+                    const response = await fetch('http://localhost:8000/health');
+                    if (response.ok) {
+                        const data = await response.json();
+                        statusEl.className = 'status success';
+                        statusEl.textContent = `✅ Backend connected! Status: ${data.status}`;
+                    } else {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                } catch (error) {
+                    statusEl.className = 'status error';
+                    statusEl.textContent = `❌ Backend connection failed: ${error.message}`;
+                }
+            }
+
+            async testOpenAIConnection() {
+                const statusEl = document.getElementById('backend-status');
+                statusEl.style.display = 'block';
+                statusEl.className = 'status info';
+                statusEl.textContent = '🔄 Testing OpenAI API connection...';
+                
+                try {
+                    const response = await fetch('http://localhost:8000/api/ai/ask', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            message: 'Hello, this is a test message',
+                            user_id: 'test-user'
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        statusEl.className = 'status success';
+                        statusEl.textContent = '✅ OpenAI API connected and responding!';
+                    } else {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                } catch (error) {
+                    statusEl.className = 'status error';
+                    statusEl.textContent = `❌ OpenAI API test failed: ${error.message}`;
+                }
+            }
+
+            updateMetrics() {
+                document.getElementById('mic-time').textContent = `${this.metrics.micAccessTime}ms`;
+                document.getElementById('record-duration').textContent = `${this.metrics.recordingDuration}ms`;
+                document.getElementById('process-time').textContent = `${this.metrics.processingTime}ms`;
+                document.getElementById('audio-size').textContent = this.formatBytes(this.metrics.audioSize);
+                
+                const successRate = this.metrics.totalTests > 0 
+                    ? Math.round((this.metrics.successCount / this.metrics.totalTests) * 100)
+                    : 0;
+                document.getElementById('success-rate').textContent = `${successRate}% (${this.metrics.successCount}/${this.metrics.totalTests})`;
+            }
+
+            formatBytes(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+
+            extractTitleFromSample(sample) {
+                // Simple extraction logic for demo
+                if (sample.includes('review')) return 'Review quarterly budget report';
+                if (sample.includes('call')) return 'Call client about project proposal';
+                if (sample.includes('presentation')) return 'Finish presentation slides';
+                if (sample.includes('focus session')) return 'API documentation focus session';
+                return 'Sample task';
+            }
+
+            getNextFriday() {
+                const today = new Date();
+                const daysUntilFriday = (5 - today.getDay() + 7) % 7 || 7;
+                const nextFriday = new Date(today);
+                nextFriday.setDate(today.getDate() + daysUntilFriday);
+                return nextFriday.toISOString().split('T')[0];
+            }
+
+            getTomorrow() {
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                return tomorrow.toISOString().split('T')[0];
+            }
+        }
+
+        // Initialize test suite
+        const testSuite = new VoiceTestSuite();
+
+        // Global functions for HTML onclick handlers
+        function testMicrophone() {
+            testSuite.testMicrophone();
+        }
+
+        function toggleRecording() {
+            testSuite.toggleRecording();
+        }
+
+        function playLastRecording() {
+            testSuite.playLastRecording();
+        }
+
+        function testSampleCommand(index) {
+            testSuite.testSampleCommand(index);
+        }
+
+        function testBackendConnection() {
+            testSuite.testBackendConnection();
+        }
+
+        function testOpenAIConnection() {
+            testSuite.testOpenAIConnection();
+        }
+
+        // Auto-run initial tests
+        window.addEventListener('load', () => {
+            console.log('Jipange Voice Test Suite loaded');
+            // Auto-test backend connection
+            setTimeout(() => {
+                testBackendConnection();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

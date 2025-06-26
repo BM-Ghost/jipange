@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "Jipange - AI Productivity Assistant",
+  "version": "1.0.0",
+  "description": "Quick task creation and productivity management with AI assistance",
+  "permissions": ["activeTab", "storage", "scripting", "tabs"],
+  "host_permissions": ["http://localhost:8000/*", "https://api.jipange.com/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["content.css"]
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Jipange Assistant"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["icons/*", "assets/*"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
