@@ -2,14 +2,14 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
-import { ThemeProvider } from "@/components/theme-provider"
+import { RootProvider } from "@/components/providers/root-provider"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "Jipange - AI-Powered Productivity Platform",
   description:
-    "Futuristic productivity platform with AI assistant Jia, smart scheduling, and collaborative task management.",
+    "Transform your productivity with intelligent project planning, smart scheduling, and AI-powered task management.",
     generator: 'v0.dev'
 }
 
@@ -19,11 +19,9 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
-          {children}
-        </ThemeProvider>
+        <RootProvider>{children}</RootProvider>
       </body>
     </html>
   )
