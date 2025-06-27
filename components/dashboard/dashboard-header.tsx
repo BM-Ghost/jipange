@@ -1,10 +1,12 @@
 "use client"
 
-import { Bell, Search, Settings, User } from "lucide-react"
+import { Bell, Search, Settings, User, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
+import { signOut } from "next-auth/react"
+import { useRouter } from "next/navigation"
 
 export function DashboardHeader() {
   return (
@@ -38,6 +40,15 @@ export function DashboardHeader() {
 
         <Button variant="ghost" size="icon" className="text-slate-300 hover:text-white hover:bg-slate-700/50">
           <Settings className="w-5 h-5" />
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-slate-300 hover:text-white hover:bg-slate-700/50"
+          onClick={() => signOut({ callbackUrl: "/auth/signin" })}
+        >
+          <LogOut className="w-5 h-5" />
         </Button>
 
         <Avatar className="w-8 h-8">
