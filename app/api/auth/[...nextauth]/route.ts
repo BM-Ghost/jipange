@@ -1,7 +1,18 @@
 import NextAuth from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
 import GitHubProvider from "next-auth/providers/github"
+import CredentialsProvider from "next-auth/providers/credentials"
 import type { NextAuthOptions } from "next-auth"
+import type { Session } from "next-auth"
+
+// Extend the Session type to include custom properties
+declare module "next-auth" {
+  interface Session {
+    accessToken?: string
+    refreshToken?: string
+    provider?: string
+  }
+}
 
 const authOptions: NextAuthOptions = {
   providers: [
@@ -24,7 +35,36 @@ const authOptions: NextAuthOptions = {
         },
       },
     }),
+    CredentialsProvider({
+      name: "Credentials",
+      credentials: {
+        emailOrUsername: { label: "Email or Username", type: "text" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials, req) {
+        const { emailOrUsername, password } = credentials as {
+          emailOrUsername: string
+          password: string
+        }
+
+        try {
+          const res = await fetch(`${process.env.NEXTAUTH_URL}/api/auth/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ emailOrUsername, password }),
+          })
+
+          if (!res.ok) return null
+          const user = await res.json()
+          return user ?? null
+        } catch (error) {
+          console.error("Credentials authorize error:", error)
+          return null
+        }
+      },
+    }),
   ],
+
   callbacks: {
     async jwt({ token, account, profile }) {
       if (account) {
@@ -41,20 +81,21 @@ const authOptions: NextAuthOptions = {
       return session
     },
     async signIn({ user, account, profile }) {
-      // Save user to database
-      await saveUserToDatabase(user, account, profile)
+      if (account?.provider !== "credentials") {
+        await saveUserToDatabase(user, account, profile)
+      }
       return true
     },
   },
+
   pages: {
-    signIn: "/auth/signin",
-    signUp: "/auth/signup",
+    signIn: "/auth/signin", // your custom login page
   },
 }
 
 async function saveUserToDatabase(user: any, account: any, profile: any) {
   try {
-    const response = await fetch(`${process.env.NEXTAUTH_URL}/api/users/create`, {
+    await fetch(`${process.env.NEXTAUTH_URL}/api/users/create`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
